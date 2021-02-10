@@ -12,34 +12,34 @@ import (
 
 // Connection is the RabbitMQ connection
 type Connection struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	queue   amqp.Queue
-	err     chan error
+	Conn    *amqp.Connection
+	Channel *amqp.Channel
+	Queue   amqp.Queue
+	Err     chan error
 }
 
 // Connect initialize the RabbitMQ connection
 func (c *Connection) Connect() error {
 	var err error
 
-	c.conn, err = amqp.Dial("amqp://" + os.Getenv("RABBITMQ_USERNAME") + ":" + os.Getenv("RABBITMQ_PASSWORD") + "@" + os.Getenv("RABBITMQ_HOST") + ":" + os.Getenv("RABBITMQ_PORT") + "/" + os.Getenv("RABBITMQ_VHOST"))
+	c.Conn, err = amqp.Dial("amqp://" + os.Getenv("RABBITMQ_USERNAME") + ":" + os.Getenv("RABBITMQ_PASSWORD") + "@" + os.Getenv("RABBITMQ_HOST") + ":" + os.Getenv("RABBITMQ_PORT") + "/" + os.Getenv("RABBITMQ_VHOST"))
 	if err != nil {
 		helpers.LogIfError(err, "Failed to connect to RabbitMQ")
 		return err
 	}
 
 	go func() {
-		<-c.conn.NotifyClose(make(chan *amqp.Error))
-		c.err <- errors.New("The connection to RabbitMQ is closed")
+		<-c.Conn.NotifyClose(make(chan *amqp.Error))
+		c.Err <- errors.New("The connection to RabbitMQ is closed")
 	}()
 
-	c.channel, err = c.conn.Channel()
+	c.Channel, err = c.Conn.Channel()
 	if err != nil {
 		helpers.LogIfError(err, "Failed to open a channel in RabbitMQ")
 		return err
 	}
 
-	c.queue, err = c.channel.QueueDeclare(
+	c.Queue, err = c.Channel.QueueDeclare(
 		os.Getenv("RABBITMQ_QUEUE"), // name
 		true,                        // durable
 		false,                       // delete when unused
@@ -72,7 +72,7 @@ func (c *Connection) Reconnect(second int) {
 func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 	m := make(map[string]<-chan amqp.Delivery)
 
-	err := c.channel.Qos(
+	err := c.Channel.Qos(
 		1,     // prefetch count
 		0,     // prefetch size
 		false, // global
@@ -82,8 +82,8 @@ func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 		return nil, err
 	}
 
-	messages, err := c.channel.Consume(
-		c.queue.Name, // queue
+	messages, err := c.Channel.Consume(
+		c.Queue.Name, // queue
 		"",           // consumer
 		false,        // auto-ack
 		false,        // exclusive
@@ -96,7 +96,7 @@ func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 		return nil, err
 	}
 
-	m[c.queue.Name] = messages
+	m[c.Queue.Name] = messages
 
 	return m, nil
 }
