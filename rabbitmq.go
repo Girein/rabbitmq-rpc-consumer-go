@@ -100,3 +100,28 @@ func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 
 	return m, nil
 }
+
+// HandleConsumedMessages handles the consumed messages from the queues
+func (c *Connection) HandleConsumedMessages(q string, message <-chan amqp.Delivery, fn func(Connection, string, <-chan amqp.Delivery), second int) {
+	for {
+		go fn(*c, q, message)
+
+		if err := <-c.Err; err != nil {
+			log.Printf(" [*] The connection to RabbitMQ is lost")
+
+			c.Reconnect(second)
+
+			defer c.Conn.Close()
+			defer c.Channel.Close()
+
+			messages, err := c.Consume()
+			if err != nil {
+				panic(err)
+			}
+
+			message = messages[q]
+
+			log.Printf(" [*] Awaiting RPC requests")
+		}
+	}
+}
