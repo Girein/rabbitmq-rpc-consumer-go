@@ -119,9 +119,6 @@ func (c *Connection) HandleConsumedMessages(q string, message <-chan amqp.Delive
 			message = messages[q]
 
 			log.Printf(" [*] Awaiting RPC requests")
-
-			c.Conn.Close()
-			c.Channel.Close()
 		}
 	}
 }
