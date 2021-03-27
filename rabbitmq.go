@@ -29,10 +29,7 @@ func (c *Connection) Connect() error {
 	}
 
 	go func() {
-		channel := make(chan *amqp.Error)
-		defer close(channel)
-
-		<-c.Conn.NotifyClose(channel)
+		<-c.Conn.NotifyClose(make(chan *amqp.Error))
 		c.Err <- errors.New("the connection to RabbitMQ is closed")
 	}()
 
