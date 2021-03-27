@@ -29,8 +29,11 @@ func (c *Connection) Connect() error {
 	}
 
 	go func() {
-		<-c.Conn.NotifyClose(make(chan *amqp.Error))
-		c.Err <- errors.New("The connection to RabbitMQ is closed")
+		channel := make(chan *amqp.Error)
+		defer close(channel)
+
+		<-c.Conn.NotifyClose(channel)
+		c.Err <- errors.New("the connection to RabbitMQ is closed")
 	}()
 
 	c.Channel, err = c.Conn.Channel()
@@ -111,9 +114,6 @@ func (c *Connection) HandleConsumedMessages(q string, message <-chan amqp.Delive
 
 			c.Reconnect(second)
 
-			defer c.Conn.Close()
-			defer c.Channel.Close()
-
 			messages, err := c.Consume()
 			if err != nil {
 				panic(err)
@@ -122,6 +122,9 @@ func (c *Connection) HandleConsumedMessages(q string, message <-chan amqp.Delive
 			message = messages[q]
 
 			log.Printf(" [*] Awaiting RPC requests")
+
+			c.Conn.Close()
+			c.Channel.Close()
 		}
 	}
 }
