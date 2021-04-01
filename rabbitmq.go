@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Girein/helpers-go"
 	"github.com/streadway/amqp"
 )
 
@@ -24,7 +23,6 @@ func (c *Connection) Connect() error {
 
 	c.Conn, err = amqp.Dial("amqp://" + os.Getenv("RABBITMQ_USERNAME") + ":" + os.Getenv("RABBITMQ_PASSWORD") + "@" + os.Getenv("RABBITMQ_HOST") + ":" + os.Getenv("RABBITMQ_PORT") + "/" + os.Getenv("RABBITMQ_VHOST"))
 	if err != nil {
-		helpers.LogIfError(err, "Failed to connect to RabbitMQ")
 		return err
 	}
 
@@ -35,7 +33,6 @@ func (c *Connection) Connect() error {
 
 	c.Channel, err = c.Conn.Channel()
 	if err != nil {
-		helpers.LogIfError(err, "Failed to open a channel in RabbitMQ")
 		return err
 	}
 
@@ -48,7 +45,6 @@ func (c *Connection) Connect() error {
 		nil,                         // arguments
 	)
 	if err != nil {
-		helpers.LogIfError(err, "Failed to declare a queue in RabbitMQ")
 		return err
 	}
 
@@ -78,7 +74,6 @@ func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 		false, // global
 	)
 	if err != nil {
-		helpers.LogIfError(err, "Failed to set QoS in RabbitMQ")
 		return nil, err
 	}
 
@@ -92,7 +87,6 @@ func (c *Connection) Consume() (map[string]<-chan amqp.Delivery, error) {
 		nil,          // args
 	)
 	if err != nil {
-		helpers.LogIfError(err, "Failed to register a consumer in RabbitMQ")
 		return nil, err
 	}
 
